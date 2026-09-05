@@ -1,0 +1,24 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Secrets - never commit these
+appsettings.Development.json
+appsettings.*.local.json
+*.env
+.env
+
+## OS/editor
+.DS_Store
+.idea/
+*.swp
+
+## Build/publish output
+publish/
+*.pdb
+
+## Docker
+*.log
