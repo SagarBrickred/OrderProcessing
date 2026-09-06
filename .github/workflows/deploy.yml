@@ -1,0 +1,92 @@
+name: Build and Deploy OrderProcessing
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # Required for GitHub to request an OIDC token from Azure
+  contents: read
+
+env:
+  ACR_NAME: acrorderprocdev01
+  ACR_LOGIN_SERVER: acrorderprocdev01.azurecr.io
+  AKS_RESOURCE_GROUP: rg-orderproc-dev
+  AKS_CLUSTER_NAME: aks-orderproc-dev
+  AKS_NAMESPACE: orderproc
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore OrderProcessing.sln
+
+      - name: Build
+        run: dotnet build OrderProcessing.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test OrderProcessing.sln --no-build --configuration Release
+
+      - name: Azure login (OIDC, no stored secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push API image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/orderprocessing-api:${{ github.sha }} \
+            -f src/OrderProcessing.Api/Dockerfile .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/orderprocessing-api:${{ github.sha }}
+
+      - name: Build and push Worker image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/orderprocessing-worker:${{ github.sha }} \
+            -f src/OrderProcessing.Worker/Dockerfile .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/orderprocessing-worker:${{ github.sha }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --overwrite-existing
+
+      - name: Deploy API image
+        run: |
+          kubectl set image deployment/orderprocessing-api \
+            orderprocessing-api=${{ env.ACR_LOGIN_SERVER }}/orderprocessing-api:${{ github.sha }} \
+            -n ${{ env.AKS_NAMESPACE }}
+
+      - name: Deploy Worker image
+        run: |
+          kubectl set image deployment/orderprocessing-worker \
+            orderprocessing-worker=${{ env.ACR_LOGIN_SERVER }}/orderprocessing-worker:${{ github.sha }} \
+            -n ${{ env.AKS_NAMESPACE }}
+
+      - name: Wait for API rollout
+        run: kubectl rollout status deployment/orderprocessing-api -n ${{ env.AKS_NAMESPACE }} --timeout=180s
+
+      - name: Wait for Worker rollout
+        run: kubectl rollout status deployment/orderprocessing-worker -n ${{ env.AKS_NAMESPACE }} --timeout=180s
+
+      - name: Health check
+        run: |
+          kubectl run healthcheck-${{ github.run_id }} \
+            --rm -i --restart=Never \
+            --image=curlimages/curl:latest \
+            --namespace=${{ env.AKS_NAMESPACE }} \
+            -- curl -sf http://orderprocessing-api.${{ env.AKS_NAMESPACE }}.svc.cluster.local/health
