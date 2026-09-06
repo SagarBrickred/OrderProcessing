@@ -27,14 +27,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore OrderProcessing.sln
 
       - name: Build
-        run: dotnet build OrderProcessing.sln --no-restore --configuration Release
+        run: dotnet build OrderProcessing.sln --configuration Release
 
       - name: Run unit tests
-        run: dotnet test OrderProcessing.sln --no-build --configuration Release
+        run: dotnet test OrderProcessing.sln --configuration Release --no-build
 
       - name: Azure login (OIDC, no stored secret)
         uses: azure/login@v2
