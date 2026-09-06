@@ -18,6 +18,7 @@
 
     <!-- Health check UI package for a richer /health response. -->
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.1" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
