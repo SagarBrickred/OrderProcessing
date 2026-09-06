@@ -6,8 +6,7 @@ COPY ["src/OrderProcessing.Shared/OrderProcessing.Shared.csproj", "src/OrderProc
 RUN dotnet restore "src/OrderProcessing.Worker/OrderProcessing.Worker.csproj"
 
 COPY . .
-RUN dotnet publish "src/OrderProcessing.Worker/OrderProcessing.Worker.csproj" -c Release -o /app/publish --no-restore
-
+RUN dotnet publish "src/OrderProcessing.Worker/OrderProcessing.Worker.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 WORKDIR /app
 

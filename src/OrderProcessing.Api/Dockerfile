@@ -12,7 +12,7 @@ COPY ["src/OrderProcessing.Shared/OrderProcessing.Shared.csproj", "src/OrderProc
 RUN dotnet restore "src/OrderProcessing.Api/OrderProcessing.Api.csproj"
 
 COPY . .
-RUN dotnet publish "src/OrderProcessing.Api/OrderProcessing.Api.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "src/OrderProcessing.Api/OrderProcessing.Api.csproj" -c Release -o /app/publish
 
 # --- Runtime stage ---
 # Uses the much smaller ASP.NET runtime-only image - no SDK/compilers ship in the
