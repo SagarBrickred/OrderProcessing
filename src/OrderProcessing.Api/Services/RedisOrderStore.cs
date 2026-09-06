@@ -1,6 +1,6 @@
 using System.Text.Json;
-using OrderProcessing.Shared.Models;
 using StackExchange.Redis;
+using Order = OrderProcessing.Shared.Models.Order;
 
 namespace OrderProcessing.Api.Services;
 

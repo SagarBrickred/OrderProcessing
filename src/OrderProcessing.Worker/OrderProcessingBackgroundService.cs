@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
-using OrderProcessing.Shared.Models;
 using StackExchange.Redis;
+using Order = OrderProcessing.Shared.Models.Order;
+using OrderCreatedMessage = OrderProcessing.Shared.Models.OrderCreatedMessage;
+using OrderStatus = OrderProcessing.Shared.Models.OrderStatus;
 
 namespace OrderProcessing.Worker;
 
