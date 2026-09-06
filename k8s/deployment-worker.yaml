@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderprocessing-worker
+  namespace: orderproc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orderprocessing-worker
+  template:
+    metadata:
+      labels:
+        app: orderprocessing-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: sa-orderproc-worker
+      containers:
+        - name: orderprocessing-worker
+          image: acrorderprocdev01.azurecr.io/orderprocessing-worker:v1
+          env:
+            - name: ServiceBus__FullyQualifiedNamespace
+              value: "sb-orderproc-dev01.servicebus.windows.net"
+            - name: ServiceBus__QueueName
+              value: "orders-queue"
+            - name: REDIS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_CONNECTION_STRING
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: spc-orderproc-worker
