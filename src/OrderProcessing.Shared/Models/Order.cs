@@ -12,7 +12,7 @@ public enum OrderStatus
     Pending,
     Processing,
     Completed,
-    Failed
+    Failed 
 }
 
 /// <summary>
